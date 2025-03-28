@@ -1,6 +1,8 @@
 import express from 'express';
 const router = express.Router();
 
+let nextPokemonId = 4;
+
 const myPokemon = {
     1: {
         name: 'Pikachu',
@@ -84,12 +86,23 @@ router.post('/', function(request, response) {
         health: requestBody.health,
     }
 
-    const newId = Object.values(myPokemon).length + 1;
+    const newId = nextPokemonId;
     myPokemon[newId] = newPokemon;
+    nextPokemonId = nextPokemonId + 1;
 
     response.json({
         newPokemonId: newId
     });
+})
+
+router.delete('/:pokemonId', function(request, response) {
+    const pokemonToDelete = request.params.pokemonId;
+
+    delete myPokemon[pokemonToDelete]
+
+    response.send("Delete request received")
+
+
 })
 
 

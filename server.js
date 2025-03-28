@@ -1,6 +1,7 @@
 import express from 'express';
 import randomNumberGenerator from './backend/utils.js';
 import pokemonAPI from './backend/api/pokemon.api.js';
+import userAPI from './backend/api/user.api.js'
 
 const app = express();
 
@@ -9,6 +10,8 @@ app.use(express.urlencoded({ extended: true }));
 
 
 app.use('/api/pokemon', pokemonAPI)
+app.use('/api/user', userAPI);
+
 
 app.get('/', function(request, response) {
     response.send('This is the second GET request with the same URL')
