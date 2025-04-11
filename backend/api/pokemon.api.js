@@ -1,5 +1,8 @@
 import express from 'express';
+import { deletePokemon, findPokemonById, findPokemonByOwner, findPokemonByType, getAllPokemon, insertPokemon } from './db/model/pokemon.model.js';
+
 const router = express.Router();
+
 
 let nextPokemonId = 4;
 
@@ -22,32 +25,29 @@ const myPokemon = {
 }
 
 
-router.get('/', function(req, res) {
-  
-    /*
-        {
-            type: 'Fire',
-            health: '100'
-        }
-    */
+
+router.get('/', async function(req, res) {
+
     const pokemonType = req.query.type;
 
-    if(pokemonType) {
-        const matchingPokemon = [];
-        const pokemonList = Object.values(myPokemon);
+    const owner = req.cookies.user
 
-        for(let i = 0; i < pokemonList.length; i++) {
-            const pokemon = pokemonList[i];
-            if(pokemonType === pokemon.type) {
-                matchingPokemon.push(pokemon)
-            }
-
-        }
-        res.json(matchingPokemon);
-        return;  
+    if(!owner) {
+        // if no owner cookie, redirect to login
     }
 
-    res.json(myPokemon)
+    console.log(owner);
+
+    // if(pokemonType) {
+    //     const pokemonResponse = await findPokemonByType(pokemonType);
+
+    //     res.json(pokemonResponse);
+    //     return;  
+    // }
+
+    const allPokemonResponse = await findPokemonByOwner(owner);
+
+    res.json(allPokemonResponse)
 
 });
 
@@ -56,10 +56,10 @@ router.get('/', function(req, res) {
 
 // localhost:8000/api/pokemon/2
 
-router.get('/:pokemonId', function(request, response) {
-    const pokeId = request.params.pokemonId;
+router.get('/:pokemonId', async function(request, response) {
+    const pokemonId = request.params.pokemonId;
 
-    const responsePokemon = myPokemon[pokeId];
+    const responsePokemon = await findPokemonById(pokemonId);
 
     if(!responsePokemon) {
         response.status(404);
@@ -67,12 +67,16 @@ router.get('/:pokemonId', function(request, response) {
         return;
     }
 
-    response.json(responsePokemon)
 
+    response.json(responsePokemon)
 })
 
-router.post('/', function(request, response) {
+router.post('/', async function(request, response) {
     const requestBody = request.body;
+
+    const owner = request.cookies.user
+
+    console.log(owner);
 
     if(!requestBody.type || !requestBody.health || !requestBody.name)  {
         response.status(400)
@@ -84,30 +88,31 @@ router.post('/', function(request, response) {
         type: requestBody.type,
         name: requestBody.name,
         health: requestBody.health,
+        owner: owner
     }
 
-    const newId = nextPokemonId;
-    myPokemon[newId] = newPokemon;
-    nextPokemonId = nextPokemonId + 1;
+    if(requestBody.creationDate) {
+        newPokemon.creationDate = requestBody.creationDate
+    }
+
+    const newPokemonId = await insertPokemon(newPokemon)
+
+    // const newId = nextPokemonId;
+    // myPokemon[newId] = newPokemon;
+    // nextPokemonId = nextPokemonId + 1;
 
     response.json({
-        newPokemonId: newId
+        newPokemonId: newPokemonId
     });
 })
 
-router.delete('/:pokemonId', function(request, response) {
+router.delete('/:pokemonId', async function(request, response) {
     const pokemonToDelete = request.params.pokemonId;
 
-    delete myPokemon[pokemonToDelete]
+    await deletePokemon(pokemonToDelete)
 
     response.send("Delete request received")
-
-
 })
 
-
-router.get('/about', function(req, res) {
-  res.send('Food is the best');
-});
 
 export default router;

@@ -3,25 +3,56 @@ const router = express.Router();
 
 const usersDB = {
     1: {
-        username: 'hacker123',
-        password: 'banana12',
+        username: 'hunter',
+        password: 'passwordhunter',
         age: 37
     },
     2: {
-        username: 'awesomedud',
-        password: 'banana12',
+        username: 'josh',
+        password: 'passwordjosh',
         age: 20
     }
-
-
 }
 
-// /api/user/?minAge=30
-/*
-req.query = {
-    minAge: '30',
-}
-*/
+router.post('/login', function(req, res) {
+
+    const requestBody = req.body;
+    const password = requestBody.password;
+    const username = requestBody.username;
+
+    console.log("userdata", username, password)
+
+    if(!password || !username) {
+        res.status(401);
+        res.send("User did not provide a username and/or password")
+        return;
+    }
+
+    let userdata;
+    for(let i = 0; i < Object.values(usersDB).length; i++) {
+        const curUserData = Object.values(usersDB)[i]
+        if(curUserData.username === username) {
+            userdata = curUserData
+        }
+    }
+
+    if(!userdata) {
+        res.status(400);
+        res.send("User data not found for username: " + username)
+        return;
+    }
+
+    if(password !== userdata.password) {
+        res.status(401);
+        res.send("Username/password pair not valid")
+        return;
+    }
+
+    res.cookie("user", username);
+
+    res.status(200);
+    res.send("Successfully logged in");
+})
 
 
 router.get('/', function(req, res) {

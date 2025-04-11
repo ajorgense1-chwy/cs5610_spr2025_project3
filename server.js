@@ -1,11 +1,14 @@
 import express from 'express';
-import randomNumberGenerator from './backend/utils.js';
+// import randomNumberGenerator from './backend/utils.js';
+import mongoose from 'mongoose';
 import pokemonAPI from './backend/api/pokemon.api.js';
-import userAPI from './backend/api/user.api.js'
+import userAPI from './backend/api/user.api.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }));
 
 
@@ -13,26 +16,11 @@ app.use('/api/pokemon', pokemonAPI)
 app.use('/api/user', userAPI);
 
 
-app.get('/', function(request, response) {
-    response.send('This is the second GET request with the same URL')
+const MONGODB_URL = "insert URL here"
+mongoose.connect(MONGODB_URL);
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'Error connecting to MongoDB:'));
 
-})
-
-app.get('/', function(request, response) {
-    response.send(`Hello web dev from the backend!
-        Here's a random number: ${randomNumberGenerator()}
-        `)
-})
-
-
-
-app.get('/someUrlStuff', function(request, response) {
-    response.send("Here's some random URL nonsense aIO&)(&)(&@$#%^&*")
-})
-
-app.post('/', function(request, response) {
-    response.send("My first POST ruquest");
-})
 
 app.listen(8000, function () {
     console.log('Starting server...');
