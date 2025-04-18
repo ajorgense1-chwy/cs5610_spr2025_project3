@@ -3,7 +3,6 @@ import { deletePokemon, findPokemonById, findPokemonByOwner, findPokemonByType, 
 
 const router = express.Router();
 
-
 let nextPokemonId = 4;
 
 const myPokemon = {
@@ -27,25 +26,20 @@ const myPokemon = {
 
 
 router.get('/', async function(req, res) {
-
-    const pokemonType = req.query.type;
-
     const owner = req.cookies.user
 
     if(!owner) {
         // if no owner cookie, redirect to login
     }
 
-    console.log(owner);
-
-    // if(pokemonType) {
-    //     const pokemonResponse = await findPokemonByType(pokemonType);
-
-    //     res.json(pokemonResponse);
-    //     return;  
-    // }
-
     const allPokemonResponse = await findPokemonByOwner(owner);
+
+    res.json(allPokemonResponse)
+
+});
+
+router.get('/all', async function(req, res) {
+    const allPokemonResponse = await getAllPokemon();
 
     res.json(allPokemonResponse)
 
@@ -74,21 +68,20 @@ router.get('/:pokemonId', async function(request, response) {
 router.post('/', async function(request, response) {
     const requestBody = request.body;
 
-    const owner = request.cookies.user
-
-    console.log(owner);
-
     if(!requestBody.type || !requestBody.health || !requestBody.name)  {
         response.status(400)
         response.send("Request invalid, please recheck");
         return;
     }
 
+    if(!Number(requestBody.health)) {
+        
+    }
+
     const newPokemon = {
         type: requestBody.type,
         name: requestBody.name,
-        health: requestBody.health,
-        owner: owner
+        health: requestBody.health
     }
 
     if(requestBody.creationDate) {

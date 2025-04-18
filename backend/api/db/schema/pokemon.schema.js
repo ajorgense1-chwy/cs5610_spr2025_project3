@@ -12,6 +12,10 @@ const PokemonSchema = new Schema({
         type: Number,
         default: Date.now
     },
+    state: {
+        type: String,
+        default: "wild",
+    }, // free, captured
     owner: String
 }, {
     collection: "pokemonspring2025"

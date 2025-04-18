@@ -1,26 +1,11 @@
 import express from 'express';
+import { createUser, findUser } from './db/model/user.model.js';
 const router = express.Router();
 
-const usersDB = {
-    1: {
-        username: 'hunter',
-        password: 'passwordhunter',
-        age: 37
-    },
-    2: {
-        username: 'josh',
-        password: 'passwordjosh',
-        age: 20
-    }
-}
-
-router.post('/login', function(req, res) {
-
+router.post('/register', async function(req, res) {
     const requestBody = req.body;
     const password = requestBody.password;
     const username = requestBody.username;
-
-    console.log("userdata", username, password)
 
     if(!password || !username) {
         res.status(401);
@@ -28,50 +13,76 @@ router.post('/login', function(req, res) {
         return;
     }
 
-    let userdata;
-    for(let i = 0; i < Object.values(usersDB).length; i++) {
-        const curUserData = Object.values(usersDB)[i]
-        if(curUserData.username === username) {
-            userdata = curUserData
-        }
+    const userdata = {
+        username: username,
+        password: password
     }
 
-    if(!userdata) {
-        res.status(400);
-        res.send("User data not found for username: " + username)
-        return;
+    try {
+        const response = await createUser(userdata);
+        res.cookie("user", username);
+        res.send(response);
+    } catch (e) {
+        res.status(400)
+        res.send("something went wrong:" + e)
     }
+})
 
-    if(password !== userdata.password) {
+router.post('/login', async function(req, res) {
+
+    const requestBody = req.body;
+    const password = requestBody.password;
+    const username = requestBody.username;
+
+    if(!password || !username) {
         res.status(401);
-        res.send("Username/password pair not valid")
+        res.send("User did not provide a username and/or password")
         return;
     }
 
-    res.cookie("user", username);
 
-    res.status(200);
-    res.send("Successfully logged in");
-})
+    try {
+        const response = await findUser(username);
 
+        if(!response) {
+            res.status(400);
+            res.send("User data not found for username: " + username)
+            return;
+        }
 
-router.get('/', function(req, res) {
+        if(password !== response.password) {
+            res.status(401);
+            res.send("Username/password pair not valid")
+            return;
+        }
 
-    const minimumAge = Number(req.query.minAge);
-
-    if(minimumAge) {
-        const minAgeUsers = Object.values(usersDB)
-            .filter(function(user) {
-                return user.age >= minimumAge;
-            })
-        res.json(minAgeUsers);
-        return;
+        res.cookie("user", username);
+        res.send("Successfully logged in");
+    } catch (e) {
+        res.status(400)
+        res.send("something went wrong:" + e)
 
     }
-
-    res.json(usersDB);
-
 })
+
+router.get('/isLoggedIn', async function(req, res) {
+    const username = req.cookies.user;
+
+    res.json({
+        username: username
+    })
+})
+
+router.delete('/logout', async function(req, res) {
+    const username = req.cookies.user;
+
+    res.cookie('user', username, {
+        maxAge: 0,
+    })
+
+    res.send("Successfully loged out")
+})
+
 
 /*
     /api/user/{user_id}
@@ -84,51 +95,6 @@ router.get('/', function(req, res) {
     }
 
 */
-router.get('/:userId', function(request, response) {
 
-    const userId = request.params.userId;
-
-    const foundUser = usersDB[userId]
-
-    if(!foundUser) {
-        response.status(404);
-        response.send('Cannot find matching user');
-        return;
-    }
-
-    response.json(foundUser)
-
-})
-
-router.post('/', function(request, response) {
-
-    const body = request.body;
-
-    const username = body.username;
-    const password = body.password;
-
-    if(!username || !password) {
-        response.status(400);
-        response.send(`Missing either username (${username}) or password (${passsword})`)
-        return;
-    }
-
-    const newUserId = Object.keys(usersDB).length + 1
-
-    const randomAge = Math.ceil(Math.random() * 100);
-
-    usersDB[newUserId] = {
-        username: username,
-        password: password,
-        age: randomAge,
-    }
-
-    response.json({
-        message: 'New user created',
-        userId: newUserId,
-    })
-
-
-})
 
 export default router;

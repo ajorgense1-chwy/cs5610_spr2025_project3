@@ -4,122 +4,113 @@ import { useEffect, useState } from "react";
 export default function AllPokemon() {
 
     const [pokemonState, setPokemonState] = useState(null);
-    const [pokemonCount, setPokemonCount] = useState(0);
-    const [newPokemonOwnerState, setNewPokemonOwnerState] = useState('');
-    const [newPokemonNameState, setPokemonNameState] = useState('');
-    const [newPokemonTypeState, setPokemonTyeState] = useState('');
-    const [newPokemonHealthState, setPokemonHealthState] = useState(0);
+    const [userState, setUserState] = useState(undefined);
 
-
-    let pokemonData = null;
     async function retrieveAllPokemon() {
-        const response = await axios.get('/api/pokemon');
+        const response = await axios.get('/api/pokemon/all');
         const pokemon = response.data;
-        pokemonData = pokemon;
-        setPokemonState(pokemonData)
+        setPokemonState(pokemon)
     }
 
+
     async function retrieveUserData() {
-        
+        const response = await axios.get('/api/user/isLoggedIn')
+        let userdata = response.data.username
+        if(!userdata) {
+            userdata = null;
+        }
+        setUserState(userdata);
     }
 
     useEffect(function () {
         retrieveAllPokemon();
         retrieveUserData();
-
     }, [])
 
-    if(pokemonData) {
+
+    if(!pokemonState || userState === undefined) {
         return <div>
-            Data retrieved! - {JSON.stringify(pokemonData)}
+            Loading data...
         </div>
     }
 
-
-    if(!pokemonState) {
-        return <div>
-            Loading pokemon...
-        </div>
-    }
-
-    const pokemonComponent = [];
     
     const pokemonKeys = Object.keys(pokemonState)
+    const pokemonByOwner = {};
 
     for(let i = 0; i <pokemonKeys.length; i++) {
-        const key = pokemonKeys[i]
-        const currentPokemon = pokemonState[key]
-
-        const newComponent = (<div>
-                {currentPokemon.name} - Health: {currentPokemon.health} - Type: {currentPokemon.type} - <button onClick={() => deletePokemon(currentPokemon._id)}>Delete Me</button>
-            </div>)
-        
-        pokemonComponent.push(newComponent)
-    }
-
-    async function deletePokemon(id) {
-        await axios.delete('/api/pokemon/' + id)
-
-        await retrieveAllPokemon();
-    }
-
-    function updateNewPokemonHealth(event) {
-        setPokemonHealthState(event.target.value)
-    }
-
-    function updateNewPokemonType(event) {
-        setPokemonTyeState(event.target.value)
-    }
-
-    function updateNewPokemonName(event) {
-        setPokemonNameState(event.target.value)
-    }
-
-    function updateNewPokemonOwner(event) {
-        setNewPokemonOwnerState(event.target.value)
-    }
-
-    async function submitNewPokemon() {
-        const request = {
-            name: newPokemonNameState,
-            health: newPokemonHealthState,
-            type: newPokemonTypeState,
-            owner: newPokemonOwnerState
+        const pokemon = pokemonState[pokemonKeys[i]];
+        let owner = pokemon.owner;
+        if(!owner) {
+            owner = 'Wild';
         }
 
-        const response = await axios.post('/api/pokemon', request)
+        if(!pokemonByOwner[owner]) {
+            pokemonByOwner[owner] = [];
+        }
 
+        pokemonByOwner[owner].push(pokemon)
+    }
+
+
+    const ownerNameKeys = Object.keys(pokemonByOwner)
+    const pokemonComponent = [];
+
+    for(let i = 0; i < ownerNameKeys.length; i++) {
+        const owner = ownerNameKeys[i];
+        const ownersPokemon = pokemonByOwner[owner]
+
+        const header = <h2>{owner}</h2>;
+        pokemonComponent.push(header);
+        for (let pokemon of ownersPokemon) {
+            let ownerCheckBox = null;
+            if (owner === useState) {
+                ownerCheckBox = <div>(This is your Pokemon!)</div>
+            }
+            let claimIfWild = null;
+            if (owner === 'Wild') {
+                claimIfWild = <button onClick={() => {}}>Claim Me</button>
+            }
+            const pokeComponent = (<>
+                <h3>{pokemon.name}</h3>
+                {ownerCheckBox}
+                <div>
+                    Type: {pokemon.type} - 
+                    Health: {pokemon.health}
+                </div>
+            </>)
+            pokemonComponent.push(pokeComponent);
+        }
+
+    }
+
+    async function logout() {
+        await axios.delete('/api/user/logout')
+        setUserState(undefined)
         await retrieveAllPokemon();
-    }   
+        await retrieveUserData();
+    }
+
+    let userHeader = <div>Please log in...</div>
+    if(userState) {
+        userHeader = <>
+            <div>Welcome back, {userState}</div>
+            <button onClick={() => logout()}>Logout</button>
+        </>
+    }
 
     return (
         <div>
-            Hello from the AllPokemon page
-            {pokemonComponent}
             <div>
-                <h3>New Pokemon:</h3>
-                <div>
-                    Name:
-                    <input onChange={(event) => updateNewPokemonName(event)} />
-                </div>
-                <div>
-                    Type:
-                    <input onChange={(event) => updateNewPokemonType(event)} />
-                </div>
-                <div>
-                    Health:
-                    <input onChange={(event) => updateNewPokemonHealth(event)} type='number'/>
-                </div>
-                <div>
-                    Owner:
-                    <input onChange={(event) => updateNewPokemonOwner(event)} />
-                </div>
-                <div>
-                    <button onClick={() => submitNewPokemon()}>Create new Pokemon</button>
-                </div>
+            {userHeader}
 
 
             </div>
+
+            <h1>
+                All Pokemon    
+            </h1>
+            {pokemonComponent}
         </div>
     )
 }
